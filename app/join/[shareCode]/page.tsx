@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card from '@/components/ui/Card'
 import { formatGameDate, formatRelativeTime, isValidTaiwanPhone, formatPhoneNumber } from '@/lib/utils'
 import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle, UtensilsCrossed } from 'lucide-react'
+import type { Database } from '@/lib/supabase/types'
 
 export default function JoinGamePage() {
   const params = useParams()
@@ -27,6 +29,50 @@ export default function JoinGamePage() {
   useEffect(() => {
     fetchGame()
   }, [shareCode])
+
+  // Set up real-time subscription for RSVPs
+  useEffect(() => {
+    if (!game?.id) return
+
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const channel = supabase
+      .channel(`rsvps:${game.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'rsvps',
+          filter: `game_id=eq.${game.id}`,
+        },
+        (payload) => {
+          const newRsvp = payload.new as any
+          setGame((prev: any) => ({
+            ...prev,
+            rsvps: [
+              ...prev.rsvps,
+              {
+                id: newRsvp.id,
+                playerName: newRsvp.player_name,
+                playerPhone: newRsvp.player_phone,
+                status: newRsvp.status,
+                foodPreferences: newRsvp.food_preferences || [],
+                createdAt: newRsvp.created_at,
+              },
+            ],
+          }))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [game?.id])
 
   const fetchGame = async () => {
     try {
