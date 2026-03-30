@@ -4,22 +4,52 @@
 
 A web platform for mahjong game hosts to organize games effortlessly. Hosts create sessions, share links, and players RSVP themselves — no more endless phone calls!
 
+**Status:** ✅ Day 2 Complete - All core features implemented!
+
+---
+
+## 🚀 Quick Start
+
+**Want to test it right now?**
+
+```bash
+# Clone and install
+git clone https://github.com/mrtomato1688-coder/Mahjong-Host-Platform.git
+cd Mahjong-Host-Platform
+npm install
+
+# Set up Supabase (5 min) - See SUPABASE-SETUP.md
+# Add .env.local with your Supabase credentials
+
+# Run
+npm run dev
+```
+
+**Full guides:**
+- 📖 [QUICKSTART.md](QUICKSTART.md) - 10-minute setup
+- 🗄️ [SUPABASE-SETUP.md](SUPABASE-SETUP.md) - Database setup
+- 🚀 [DEPLOYMENT.md](DEPLOYMENT.md) - Deploy to Vercel
+- 📊 [PROGRESS-DAY-2.md](PROGRESS-DAY-2.md) - What's been built
+
 ---
 
 ## 🎯 Features
 
 - **For Hosts:**
-  - Create game sessions with date, time, location
-  - Generate unique shareable links
-  - Auto-send invitations via LINE Official Account
-  - Track RSVPs in real-time
-  - Manage multiple games from dashboard
+  - ✅ Create game sessions with date, start/end time pickers, location
+  - ✅ Configure food & beverage menu (beer, soda, snacks, etc.)
+  - ✅ Generate unique 8-character shareable links
+  - ✅ Track RSVPs in real-time with live updates
+  - ✅ Manage multiple games from dashboard
+  - ✅ See who selected which F&B items
 
 - **For Players:**
-  - View game details via shared link
-  - RSVP with just name + phone (no login required)
-  - See who else is attending
-  - Real-time seat availability updates
+  - ✅ View game details via shared link (no login required)
+  - ✅ RSVP with just name + phone
+  - ✅ Select food & beverage preferences
+  - ✅ See who else is attending in real-time
+  - ✅ Real-time seat availability updates
+  - ✅ Mobile-optimized experience
 
 ---
 
@@ -37,19 +67,23 @@ Authentic mahjong aesthetic inspired by traditional Hong Kong/Taiwan mahjong par
 ## 🛠️ Tech Stack
 
 **Frontend:**
-- Next.js 14 (TypeScript)
+- Next.js 15 (App Router, TypeScript)
 - Tailwind CSS
-- Shadcn UI
-- Framer Motion
+- React 19
+- Lucide Icons
 
 **Backend:**
-- Supabase (PostgreSQL + Auth + Real-time)
-- LINE Messaging API
-- Twilio SMS
+- Supabase (PostgreSQL + Auth + Realtime)
+- Next.js API Routes (Server Actions)
+- Row Level Security (RLS)
 
 **Hosting:**
-- Vercel (Frontend)
+- Vercel (Frontend + Edge Functions)
 - Supabase Cloud (Database)
+
+**Future:**
+- LINE Messaging API (Phase 3)
+- Twilio SMS OTP (Phase 3)
 
 ---
 
