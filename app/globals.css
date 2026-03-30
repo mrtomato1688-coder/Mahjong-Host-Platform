@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-noto-sans: 'Noto Sans TC', system-ui, sans-serif;
+    --font-inter: 'Inter', system-ui, sans-serif;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply text-neutral-gray;
+  }
+
+  /* Custom scrollbar for better aesthetics */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-tile-ivory;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-mahjong-green/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-mahjong-green/50;
+  }
+}
+
+@layer components {
+  /* Button styles */
+  .btn-primary {
+    @apply bg-lucky-red text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-lucky-red/90 active:scale-[0.98] transition-all duration-150;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-mahjong-green text-mahjong-green font-bold py-3 px-6 rounded-lg hover:bg-mahjong-green/5 active:scale-[0.98] transition-all duration-150;
+  }
+
+  .btn-ghost {
+    @apply text-mahjong-green font-semibold hover:underline active:scale-[0.98] transition-all duration-150;
+  }
+
+  /* Card with mahjong tile effect */
+  .tile-card {
+    @apply bg-white rounded-xl p-6 shadow-tile hover:shadow-tile-hover transition-all duration-300;
+  }
+
+  .tile-card:hover {
+    @apply transform -translate-y-1;
+  }
+
+  /* Input styles */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-mahjong-green focus:outline-none focus:ring-2 focus:ring-mahjong-green/20 transition-colors;
+  }
+
+  .input-error {
+    @apply border-lucky-red focus:border-lucky-red focus:ring-lucky-red/20;
+  }
+
+  /* Label styles */
+  .label-text {
+    @apply block text-sm font-semibold text-neutral-gray mb-2;
+  }
+
+  .label-required::after {
+    content: ' *';
+    @apply text-lucky-red;
+  }
+
+  /* Error message */
+  .error-message {
+    @apply text-lucky-red text-sm mt-1 flex items-center gap-1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
