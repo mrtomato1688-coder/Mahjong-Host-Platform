@@ -1,0 +1,60 @@
+{
+  "name": "mahjong-host-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A web platform for mahjong game hosts to organize games effortlessly",
+  "author": "E3 (イーシャン)",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "playwright test",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\""
+  },
+  "dependencies": {
+    "next": "14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@supabase/supabase-js": "^2.43.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "framer-motion": "^11.0.0",
+    "react-hook-form": "^7.51.0",
+    "zod": "^3.23.0",
+    "zustand": "^4.5.0",
+    "howler": "^2.2.4",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.368.0",
+    "tailwind-merge": "^2.3.0",
+    "clsx": "^2.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/howler": "^2.2.11",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0",
+    "@tailwindcss/forms": "^0.5.7",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.0",
+    "prettier": "^3.2.0",
+    "prettier-plugin-tailwindcss": "^0.5.14",
+    "@playwright/test": "^1.43.0",
+    "jest": "^29.7.0",
+    "@testing-library/react": "^15.0.0",
+    "@testing-library/jest-dom": "^6.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
