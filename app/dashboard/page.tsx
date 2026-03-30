@@ -34,8 +34,30 @@ const mockGames = [
 ]
 
 export default function DashboardPage() {
-  const [games, setGames] = useState(mockGames)
+  const [games, setGames] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchGames()
+  }, [])
+
+  const fetchGames = async () => {
+    try {
+      const response = await fetch('/api/games')
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setGames(data.games)
+      } else {
+        console.error('Failed to fetch games:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching games:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleCopyLink = async (shareCode: string, gameId: string) => {
     const url = getGameShareUrl(shareCode)
@@ -74,13 +96,20 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Upcoming Games */}
-        <section className="mb-12">
-          <h2 className="text-xl font-bold text-dark-wood mb-4">
-            即將開始 ({upcomingGames.length})
-          </h2>
-          
-          {upcomingGames.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-mahjong-green"></div>
+            <p className="text-neutral-gray mt-4">載入中...</p>
+          </div>
+        ) : (
+          <>
+            {/* Upcoming Games */}
+            <section className="mb-12">
+              <h2 className="text-xl font-bold text-dark-wood mb-4">
+                即將開始 ({upcomingGames.length})
+              </h2>
+              
+              {upcomingGames.length === 0 ? (
             <Card className="text-center py-12">
               <div className="text-4xl mb-4">🀫</div>
               <p className="text-neutral-gray mb-4">還沒有建立任何局</p>
@@ -100,7 +129,11 @@ export default function DashboardPage() {
                         <p className="font-bold text-dark-wood">
                           {formatGameDate(game.date)}
                         </p>
-                        <p className="text-sm text-neutral-gray">{game.timeSlot}</p>
+                        <p className="text-sm text-neutral-gray">
+                          {game.startTime && game.endTime 
+                            ? `${game.startTime} - ${game.endTime}`
+                            : game.timeSlot || '時間未定'}
+                        </p>
                       </div>
                     </div>
 
@@ -164,16 +197,18 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Past Games */}
-        {pastGames.length > 0 && (
-          <section>
-            <h2 className="text-xl font-bold text-dark-wood mb-4">
-              過往記錄 ({pastGames.length})
-            </h2>
-            <div className="text-center py-8">
-              <p className="text-neutral-gray">暫無過往記錄</p>
-            </div>
-          </section>
+            {/* Past Games */}
+            {pastGames.length > 0 && (
+              <section>
+                <h2 className="text-xl font-bold text-dark-wood mb-4">
+                  過往記錄 ({pastGames.length})
+                </h2>
+                <div className="text-center py-8">
+                  <p className="text-neutral-gray">暫無過往記錄</p>
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </main>

@@ -6,52 +6,72 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card from '@/components/ui/Card'
 import { formatGameDate, formatRelativeTime, isValidTaiwanPhone, formatPhoneNumber } from '@/lib/utils'
-import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
-
-// Mock game data for prototype
-const mockGame = {
-  id: '1',
-  shareCode: 'abc12345',
-  hostName: '明哥',
-  date: '2026-04-05',
-  timeSlot: '下午2點-6點',
-  location: '明哥家 - 台北市信義區松仁路',
-  maxSeats: 4,
-  notes: '小賭怡情，每台$10，自摸加倍',
-  status: 'active' as const,
-  rsvps: [
-    {
-      id: '1',
-      playerName: '阿明',
-      playerPhone: '0912345678',
-      status: 'confirmed' as 'confirmed' | 'declined' | 'maybe',
-      createdAt: new Date(Date.now() - 1800000), // 30 mins ago
-    },
-    {
-      id: '2',
-      playerName: '小華',
-      playerPhone: '0923456789',
-      status: 'confirmed' as 'confirmed' | 'declined' | 'maybe',
-      createdAt: new Date(Date.now() - 900000), // 15 mins ago
-    },
-  ],
-}
+import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle, HelpCircle, UtensilsCrossed } from 'lucide-react'
 
 export default function JoinGamePage() {
   const params = useParams()
   const shareCode = params.shareCode as string
 
-  const [game, setGame] = useState(mockGame)
+  const [game, setGame] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
     playerName: '',
     playerPhone: '',
     status: 'confirmed' as 'confirmed' | 'declined' | 'maybe',
+    foodPreferences: [] as string[],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const confirmedRsvps = game.rsvps.filter(r => r.status === 'confirmed')
+  useEffect(() => {
+    fetchGame()
+  }, [shareCode])
+
+  const fetchGame = async () => {
+    try {
+      const response = await fetch(`/api/games/${shareCode}`)
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setGame(data.game)
+      } else {
+        alert(data.error || '找不到此遊戲')
+      }
+    } catch (error) {
+      console.error('Error fetching game:', error)
+      alert('載入遊戲失敗，請稍後再試')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-mahjong-green/5 to-tile-ivory flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-mahjong-green"></div>
+          <p className="text-neutral-gray mt-4">載入中...</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!game) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-mahjong-green/5 to-tile-ivory flex items-center justify-center p-6">
+        <Card className="max-w-md w-full text-center space-y-6">
+          <div className="text-6xl">❌</div>
+          <div>
+            <h2 className="text-2xl font-bold text-dark-wood mb-2">找不到此遊戲</h2>
+            <p className="text-neutral-gray">連結可能已失效或不正確</p>
+          </div>
+        </Card>
+      </main>
+    )
+  }
+
+  const confirmedRsvps = game.rsvps?.filter((r: any) => r.status === 'confirmed') || []
   const availableSeats = game.maxSeats - confirmedRsvps.length
   const isFull = availableSeats <= 0
 
@@ -60,6 +80,15 @@ export default function JoinGamePage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
+  }
+
+  const toggleFoodPreference = (item: string) => {
+    setFormData(prev => ({
+      ...prev,
+      foodPreferences: prev.foodPreferences.includes(item)
+        ? prev.foodPreferences.filter(i => i !== item)
+        : [...prev.foodPreferences, item]
+    }))
   }
 
   const validateForm = () => {
@@ -77,19 +106,6 @@ export default function JoinGamePage() {
       newErrors.playerPhone = '請輸入有效的台灣手機號碼'
     }
 
-    // Check if phone already registered
-    const phoneExists = game.rsvps.some(
-      r => r.playerPhone === formData.playerPhone
-    )
-    if (phoneExists) {
-      newErrors.playerPhone = '此手機號碼已報名過'
-    }
-
-    // Check if game is full
-    if (isFull && formData.status === 'confirmed') {
-      newErrors.general = '抱歉，此局已額滿'
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -101,34 +117,39 @@ export default function JoinGamePage() {
       return
     }
 
-    setLoading(true)
+    if (formData.status === 'confirmed' && isFull) {
+      alert('抱歉，名額已滿')
+      return
+    }
+
+    setSubmitting(true)
 
     try {
-      // TODO: Save to Supabase
-      // For prototype, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/rsvps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameId: game.id,
+          playerName: formData.playerName,
+          playerPhone: formData.playerPhone,
+          status: formData.status,
+          foodPreferences: formData.foodPreferences,
+        }),
+      })
 
-      console.log('Submitting RSVP:', formData)
+      const data = await response.json()
 
-      // Simulate adding to list
-      const newRsvp = {
-        id: String(game.rsvps.length + 1),
-        playerName: formData.playerName,
-        playerPhone: formData.playerPhone,
-        status: formData.status,
-        createdAt: new Date(),
+      if (!response.ok) {
+        throw new Error(data.error || '報名失敗')
       }
 
-      setGame(prev => ({
-        ...prev,
-        rsvps: [...prev.rsvps, newRsvp],
-      }))
-
       setSubmitted(true)
-    } catch (err) {
-      alert('報名失敗，請稍後再試')
+    } catch (err: any) {
+      alert(err.message || '報名失敗，請稍後再試')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -137,222 +158,250 @@ export default function JoinGamePage() {
       <main className="min-h-screen bg-gradient-to-br from-mahjong-green/5 to-tile-ivory flex items-center justify-center p-6">
         <Card className="max-w-md w-full text-center space-y-6">
           <div className="text-6xl">
-            {formData.status === 'confirmed' && '✅'}
-            {formData.status === 'declined' && '❌'}
-            {formData.status === 'maybe' && '🤔'}
+            {formData.status === 'confirmed' ? '✅' : formData.status === 'declined' ? '❌' : '🤔'}
           </div>
-          
           <div>
             <h2 className="text-2xl font-bold text-dark-wood mb-2">
-              {formData.status === 'confirmed' && '報名成功！'}
-              {formData.status === 'declined' && '已記錄您無法參加'}
-              {formData.status === 'maybe' && '已記錄您的回覆'}
+              {formData.status === 'confirmed' ? '報名成功！' : 
+               formData.status === 'declined' ? '已回覆不參加' : '已回覆考慮中'}
             </h2>
             <p className="text-neutral-gray">
-              主辦人會收到您的報名資訊
+              {formData.status === 'confirmed' 
+                ? `${game.hostName} 會透過 LINE 通知您更多資訊`
+                : '感謝您的回覆'}
             </p>
           </div>
 
           <div className="bg-mahjong-green/5 rounded-lg p-4 text-left space-y-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-mahjong-green" />
-              <span className="font-semibold">{formatGameDate(game.date)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-mahjong-green" />
-              <span className="text-sm text-neutral-gray">{game.timeSlot}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-mahjong-green" />
-              <span className="text-sm text-neutral-gray">{game.location}</span>
-            </div>
+            <p className="text-sm font-semibold text-dark-wood">報名資訊</p>
+            <p className="text-sm text-neutral-gray">姓名：{formData.playerName}</p>
+            <p className="text-sm text-neutral-gray">手機：{formatPhoneNumber(formData.playerPhone)}</p>
+            {formData.foodPreferences.length > 0 && (
+              <p className="text-sm text-neutral-gray">
+                餐飲：{formData.foodPreferences.join(', ')}
+              </p>
+            )}
           </div>
-
-          {formData.status === 'confirmed' && (
-            <div className="text-sm text-neutral-gray/60">
-              <p>💡 記得準時到場</p>
-              <p>主辦人可能會聯繫您確認</p>
-            </div>
-          )}
         </Card>
       </main>
     )
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-mahjong-green/5 to-tile-ivory py-8 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="text-5xl">🀄</div>
-          <h1 className="text-3xl font-bold text-dark-wood">麻將局報名</h1>
-          <p className="text-neutral-gray">主辦人：{game.hostName}</p>
-        </div>
+  const statusOptions = [
+    { value: 'confirmed', label: '確定參加', icon: CheckCircle, color: 'mahjong-green' },
+    { value: 'declined', label: '不克參加', icon: XCircle, color: 'red-500' },
+    { value: 'maybe', label: '再看看', icon: HelpCircle, color: 'yellow-600' },
+  ]
 
-        {/* Game Details */}
-        <Card className="space-y-4">
-          <div className="space-y-3">
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-mahjong-green/5 to-tile-ivory">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        {/* Game Info Card */}
+        <Card className="mb-6">
+          <div className="text-center mb-6">
+            <span className="text-4xl mb-2 block">🀄</span>
+            <h1 className="text-2xl font-bold text-dark-wood mb-1">麻將局 - 報名確認</h1>
+            <p className="text-sm text-neutral-gray">主辦人：{game.hostName}</p>
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-mahjong-green flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-lg text-dark-wood">
-                  {formatGameDate(game.date)}
-                </p>
+                <p className="font-semibold text-dark-wood">{formatGameDate(game.date)}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-mahjong-green flex-shrink-0 mt-0.5" />
-              <p className="text-neutral-gray">{game.timeSlot}</p>
+              <div>
+                <p className="text-dark-wood">{game.startTime} - {game.endTime}</p>
+              </div>
             </div>
 
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-mahjong-green flex-shrink-0 mt-0.5" />
-              <p className="text-neutral-gray">{game.location}</p>
+              <div>
+                <p className="text-dark-wood">{game.location}</p>
+              </div>
             </div>
 
             {game.notes && (
-              <div className="bg-mahjong-green/5 rounded-lg p-4 mt-4">
-                <p className="text-sm text-neutral-gray">💬 {game.notes}</p>
+              <div className="flex items-start gap-3">
+                <span className="text-lg flex-shrink-0">💬</span>
+                <p className="text-neutral-gray text-sm">{game.notes}</p>
               </div>
             )}
           </div>
         </Card>
 
         {/* RSVP Status */}
-        <Card>
+        <Card className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg text-dark-wood">報名狀況</h3>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-lucky-red">
-                {confirmedRsvps.length}/{game.maxSeats}
-              </p>
-              <p className="text-xs text-neutral-gray">
-                {isFull ? '已額滿' : `剩餘 ${availableSeats} 個位置`}
-              </p>
-            </div>
+            <h3 className="font-semibold text-dark-wood flex items-center gap-2">
+              <Users className="w-5 h-5 text-mahjong-green" />
+              報名狀況
+            </h3>
+            <span className={`text-lg font-bold ${isFull ? 'text-red-500' : 'text-mahjong-green'}`}>
+              {confirmedRsvps.length}/{game.maxSeats}
+            </span>
           </div>
 
+          {/* RSVP List */}
           <div className="space-y-2">
-            {Array.from({ length: game.maxSeats }).map((_, index) => {
-              const rsvp = confirmedRsvps[index]
-              return (
-                <div
-                  key={index}
-                  className={`
-                    flex items-center gap-3 p-3 rounded-lg border-2
-                    ${rsvp
-                      ? 'border-mahjong-green bg-mahjong-green/5'
-                      : 'border-gray-200 bg-gray-50'
-                    }
-                  `}
-                >
-                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-mahjong-green">
-                    {index + 1}
+            {game.rsvps?.map((rsvp: any, idx: number) => (
+              <div
+                key={rsvp.id}
+                className={`p-3 rounded-lg border ${
+                  rsvp.status === 'confirmed' 
+                    ? 'border-mahjong-green/30 bg-mahjong-green/5' 
+                    : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${
+                      rsvp.status === 'confirmed' ? 'bg-mahjong-green' : 'bg-gray-400'
+                    }`}></span>
+                    <span className="font-medium text-dark-wood">{rsvp.playerName}</span>
                   </div>
-                  {rsvp ? (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-mahjong-green" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-dark-wood">{rsvp.playerName}</p>
-                        <p className="text-xs text-neutral-gray">
-                          {formatRelativeTime(rsvp.createdAt)}
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-5 h-5 rounded-full border-2 border-dashed border-gray-300" />
-                      <p className="text-neutral-gray/50">空位</p>
-                    </>
-                  )}
+                  <span className="text-xs text-neutral-gray">
+                    {formatRelativeTime(new Date(rsvp.createdAt))}
+                  </span>
                 </div>
-              )
-            })}
+                {rsvp.foodPreferences && rsvp.foodPreferences.length > 0 && (
+                  <div className="mt-1 ml-4 text-sm text-neutral-gray">
+                    {rsvp.foodPreferences.join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Empty seats */}
+            {availableSeats > 0 && Array.from({ length: Math.min(availableSeats, 4) }).map((_, idx) => (
+              <div key={`empty-${idx}`} className="p-3 rounded-lg border border-dashed border-gray-300">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                  <span className="text-neutral-gray">空位</span>
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
 
         {/* RSVP Form */}
         <Card>
-          <h3 className="font-bold text-lg text-dark-wood mb-4">我要報名</h3>
-          
+          <h3 className="font-semibold text-dark-wood mb-4">我要報名</h3>
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="姓名"
-              type="text"
-              placeholder="請輸入您的姓名"
-              value={formData.playerName}
-              onChange={(e) => handleChange('playerName', e.target.value)}
-              error={errors.playerName}
-              required
-            />
-
-            <Input
-              label="手機號碼"
-              type="tel"
-              placeholder="0912-345-678"
-              value={formData.playerPhone}
-              onChange={(e) => handleChange('playerPhone', e.target.value)}
-              error={errors.playerPhone}
-              required
-            />
-
+            {/* Name */}
             <div>
-              <label className="label-text">參加狀態</label>
-              <div className="grid grid-cols-3 gap-3 mt-2">
-                {[
-                  { value: 'confirmed', label: '確定參加', icon: CheckCircle, color: 'mahjong-green' },
-                  { value: 'declined', label: '不克參加', icon: XCircle, color: 'lucky-red' },
-                  { value: 'maybe', label: '再看看', icon: HelpCircle, color: 'gold' },
-                ].map(option => (
-                  <label
-                    key={option.value}
-                    className={`
-                      flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
-                      ${formData.status === option.value
-                        ? `border-${option.color} bg-${option.color}/5`
-                        : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}
-                  >
-                    <input
-                      type="radio"
-                      name="status"
-                      value={option.value}
-                      checked={formData.status === option.value}
-                      onChange={(e) => handleChange('status', e.target.value)}
-                      className="sr-only"
-                    />
-                    <option.icon className={`w-6 h-6 text-${option.color}`} />
-                    <span className="text-sm font-semibold">{option.label}</span>
-                  </label>
-                ))}
+              <Input
+                label="姓名"
+                type="text"
+                placeholder="請輸入您的姓名"
+                value={formData.playerName}
+                onChange={(e) => handleChange('playerName', e.target.value)}
+                error={errors.playerName}
+                required
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <Input
+                label="手機號碼"
+                type="tel"
+                placeholder="0912-345-678"
+                value={formData.playerPhone}
+                onChange={(e) => handleChange('playerPhone', e.target.value)}
+                error={errors.playerPhone}
+                required
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="label-text mb-2 block">參加狀態</label>
+              <div className="grid grid-cols-3 gap-3">
+                {statusOptions.map(option => {
+                  const Icon = option.icon
+                  const isSelected = formData.status === option.value
+                  return (
+                    <label
+                      key={option.value}
+                      className={`
+                        flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
+                        ${isSelected
+                          ? `border-${option.color} bg-${option.color}/5`
+                          : 'border-gray-300 hover:border-gray-400'
+                        }
+                      `}
+                    >
+                      <input
+                        type="radio"
+                        name="status"
+                        value={option.value}
+                        checked={isSelected}
+                        onChange={(e) => handleChange('status', e.target.value)}
+                        className="sr-only"
+                      />
+                      <Icon className={`w-6 h-6 ${isSelected ? `text-${option.color}` : 'text-gray-400'}`} />
+                      <span className="text-sm font-medium">{option.label}</span>
+                    </label>
+                  )
+                })}
               </div>
             </div>
 
-            {errors.general && (
-              <div className="bg-lucky-red/10 border-2 border-lucky-red rounded-lg p-3 text-center">
-                <p className="text-lucky-red font-semibold">{errors.general}</p>
+            {/* F&B Preferences */}
+            {game.menuItems && game.menuItems.length > 0 && (
+              <div>
+                <label className="label-text flex items-center gap-2 mb-2">
+                  <UtensilsCrossed className="w-4 h-4 text-mahjong-green" />
+                  食物飲料 (可複選)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {game.menuItems.map((item: any) => {
+                    const isSelected = formData.foodPreferences.includes(`${item.emoji} ${item.name}`)
+                    return (
+                      <label
+                        key={item.id}
+                        className={`
+                          flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
+                          ${isSelected
+                            ? 'border-mahjong-green bg-mahjong-green/5'
+                            : 'border-gray-300 hover:border-mahjong-green/50'
+                          }
+                        `}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleFoodPreference(`${item.emoji} ${item.name}`)}
+                          className="sr-only"
+                        />
+                        <span className="text-xl">{item.emoji}</span>
+                        <span className="text-sm font-medium">{item.name}</span>
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
+            {/* Submit */}
             <Button
               type="submit"
               variant="primary"
               className="w-full"
-              loading={loading}
+              loading={submitting}
               disabled={isFull && formData.status === 'confirmed'}
             >
-              確認送出
+              {isFull && formData.status === 'confirmed' ? '名額已滿' : '確認送出'}
             </Button>
           </form>
         </Card>
-
-        {/* Footer */}
-        <div className="text-center text-sm text-neutral-gray/60">
-          <p>🀄 麻將揪咖 Mahjong Host Platform</p>
-          <p className="text-xs mt-1">輕鬆揪團，一鍵開局</p>
-        </div>
       </div>
     </main>
   )

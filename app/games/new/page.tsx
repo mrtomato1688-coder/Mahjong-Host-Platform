@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card from '@/components/ui/Card'
-import { generateShareCode, getGameShareUrl, copyToClipboard } from '@/lib/utils'
+import { getGameShareUrl, copyToClipboard } from '@/lib/utils'
 import { Calendar, Clock, MapPin, Users, StickyNote, UtensilsCrossed, Plus, X } from 'lucide-react'
 
 interface MenuItem {
@@ -97,22 +97,36 @@ export default function NewGamePage() {
     setLoading(true)
 
     try {
-      // TODO: Save to Supabase
-      // For prototype, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      const code = generateShareCode()
-      setShareCode(code)
-      
-      console.log('Creating game:', { 
-        ...formData, 
-        shareCode: code,
-        menuItems: enableFB ? selectedMenuItems : []
+      // Call API to create game
+      const response = await fetch('/api/games', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          location: formData.location,
+          maxSeats: formData.maxSeats,
+          notes: formData.notes || null,
+          menuItems: enableFB ? selectedMenuItems.map(item => ({
+            name: item.name,
+            emoji: item.emoji,
+          })) : [],
+        }),
       })
-      
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '建立失敗')
+      }
+
+      setShareCode(data.game.shareCode)
       setShowSuccess(true)
-    } catch (err) {
-      alert('建立失敗，請稍後再試')
+    } catch (err: any) {
+      alert(err.message || '建立失敗，請稍後再試')
     } finally {
       setLoading(false)
     }
