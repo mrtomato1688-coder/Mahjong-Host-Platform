@@ -18,7 +18,7 @@ const mockGames = [
     maxSeats: 4,
     notes: '小賭怡情，每台$10',
     rsvpCount: 3,
-    status: 'active' as const,
+    status: 'active' as 'active' | 'cancelled' | 'completed',
   },
   {
     id: '2',
@@ -29,7 +29,7 @@ const mockGames = [
     maxSeats: 8,
     notes: null,
     rsvpCount: 1,
-    status: 'active' as const,
+    status: 'active' as 'active' | 'cancelled' | 'completed',
   },
 ]
 

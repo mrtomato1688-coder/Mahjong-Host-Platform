@@ -6,7 +6,23 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card from '@/components/ui/Card'
 import { generateShareCode, getGameShareUrl, copyToClipboard } from '@/lib/utils'
-import { Calendar, Clock, MapPin, Users, StickyNote } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, StickyNote, UtensilsCrossed, Plus, X } from 'lucide-react'
+
+interface MenuItem {
+  name: string
+  emoji: string
+}
+
+const PRESET_MENU_ITEMS: MenuItem[] = [
+  { name: '啤酒', emoji: '🍺' },
+  { name: '汽水', emoji: '🥤' },
+  { name: '麵食', emoji: '🍜' },
+  { name: '披薩', emoji: '🍕' },
+  { name: '便當', emoji: '🍱' },
+  { name: '點心', emoji: '🍪' },
+  { name: '茶飲', emoji: '🍵' },
+  { name: '咖啡', emoji: '☕' },
+]
 
 export default function NewGamePage() {
   const router = useRouter()
@@ -15,12 +31,19 @@ export default function NewGamePage() {
   const [shareCode, setShareCode] = useState('')
   const [formData, setFormData] = useState({
     date: '',
-    timeSlot: '',
+    startTime: '',
+    endTime: '',
     location: '',
     maxSeats: 4,
     notes: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // F&B state
+  const [enableFB, setEnableFB] = useState(false)
+  const [selectedMenuItems, setSelectedMenuItems] = useState<MenuItem[]>([])
+  const [newItemName, setNewItemName] = useState('')
+  const [newItemEmoji, setNewItemEmoji] = useState('🍽️')
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -44,8 +67,16 @@ export default function NewGamePage() {
       }
     }
 
-    if (!formData.timeSlot.trim()) {
-      newErrors.timeSlot = '請輸入時段'
+    if (!formData.startTime.trim()) {
+      newErrors.startTime = '請選擇開始時間'
+    }
+
+    if (!formData.endTime.trim()) {
+      newErrors.endTime = '請選擇結束時間'
+    }
+
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      newErrors.endTime = '結束時間必須晚於開始時間'
     }
 
     if (!formData.location.trim()) {
@@ -73,7 +104,11 @@ export default function NewGamePage() {
       const code = generateShareCode()
       setShareCode(code)
       
-      console.log('Creating game:', { ...formData, shareCode: code })
+      console.log('Creating game:', { 
+        ...formData, 
+        shareCode: code,
+        menuItems: enableFB ? selectedMenuItems : []
+      })
       
       setShowSuccess(true)
     } catch (err) {
@@ -90,6 +125,34 @@ export default function NewGamePage() {
 
   const handleGoToDashboard = () => {
     router.push('/dashboard')
+  }
+
+  const toggleMenuItem = (item: MenuItem) => {
+    setSelectedMenuItems(prev => {
+      const exists = prev.some(i => i.name === item.name && i.emoji === item.emoji)
+      if (exists) {
+        return prev.filter(i => !(i.name === item.name && i.emoji === item.emoji))
+      } else {
+        return [...prev, item]
+      }
+    })
+  }
+
+  const removeMenuItem = (item: MenuItem) => {
+    setSelectedMenuItems(prev => prev.filter(i => !(i.name === item.name && i.emoji === item.emoji)))
+  }
+
+  const addCustomMenuItem = () => {
+    if (!newItemName.trim()) return
+    
+    const newItem: MenuItem = {
+      name: newItemName.trim(),
+      emoji: newItemEmoji
+    }
+    
+    setSelectedMenuItems(prev => [...prev, newItem])
+    setNewItemName('')
+    setNewItemEmoji('🍽️')
   }
 
   if (showSuccess) {
@@ -169,22 +232,46 @@ export default function NewGamePage() {
               )}
             </div>
 
-            {/* Time Slot */}
+            {/* Time Picker - Start and End */}
             <div>
-              <label className="label-text label-required flex items-center gap-2">
+              <label className="label-text label-required flex items-center gap-2 mb-2">
                 <Clock className="w-4 h-4 text-mahjong-green" />
-                時段
+                時間
               </label>
-              <Input
-                type="text"
-                placeholder="例：下午2點-6點"
-                value={formData.timeSlot}
-                onChange={(e) => handleChange('timeSlot', e.target.value)}
-                error={errors.timeSlot}
-              />
-              <p className="text-sm text-neutral-gray/60 mt-1">
-                自由輸入時段，例如「下午2點-6點」或「晚上7點開始」
-              </p>
+              <div className="grid grid-cols-[1fr,auto,1fr] gap-3 items-start">
+                <div>
+                  <input
+                    type="time"
+                    className={`input-field ${errors.startTime ? 'input-error' : ''}`}
+                    value={formData.startTime}
+                    onChange={(e) => handleChange('startTime', e.target.value)}
+                  />
+                  <p className="text-xs text-neutral-gray/60 mt-1">開始時間</p>
+                  {errors.startTime && (
+                    <div className="error-message">{errors.startTime}</div>
+                  )}
+                </div>
+                
+                <div className="text-neutral-gray/60 pt-2">→</div>
+                
+                <div>
+                  <input
+                    type="time"
+                    className={`input-field ${errors.endTime ? 'input-error' : ''}`}
+                    value={formData.endTime}
+                    onChange={(e) => handleChange('endTime', e.target.value)}
+                  />
+                  <p className="text-xs text-neutral-gray/60 mt-1">結束時間</p>
+                  {errors.endTime && (
+                    <div className="error-message">{errors.endTime}</div>
+                  )}
+                </div>
+              </div>
+              {formData.startTime && formData.endTime && !errors.startTime && !errors.endTime && (
+                <p className="text-sm text-mahjong-green mt-2">
+                  ✓ {formData.startTime} - {formData.endTime}
+                </p>
+              )}
             </div>
 
             {/* Location */}
@@ -237,6 +324,115 @@ export default function NewGamePage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* F&B Configuration */}
+            <div className="border-t pt-6">
+              <label className="flex items-center gap-3 mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableFB}
+                  onChange={(e) => setEnableFB(e.target.checked)}
+                  className="w-5 h-5 text-mahjong-green rounded focus:ring-mahjong-green"
+                />
+                <span className="label-text flex items-center gap-2">
+                  <UtensilsCrossed className="w-4 h-4 text-mahjong-green" />
+                  提供餐飲選項
+                </span>
+              </label>
+
+              {enableFB && (
+                <div className="space-y-4 bg-tile-ivory/50 rounded-lg p-4">
+                  {/* Selected Items */}
+                  {selectedMenuItems.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-dark-wood mb-2">已選擇項目:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedMenuItems.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-mahjong-green/30"
+                          >
+                            <span>{item.emoji} {item.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeMenuItem(item)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preset Items */}
+                  <div>
+                    <p className="text-sm font-semibold text-dark-wood mb-2">快速選擇:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {PRESET_MENU_ITEMS.map((item, idx) => {
+                        const isSelected = selectedMenuItems.some(
+                          i => i.name === item.name && i.emoji === item.emoji
+                        )
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleMenuItem(item)}
+                            className={`
+                              px-3 py-2 rounded-lg border-2 transition-all
+                              ${isSelected
+                                ? 'border-mahjong-green bg-mahjong-green text-white'
+                                : 'border-gray-300 bg-white hover:border-mahjong-green/50'
+                              }
+                            `}
+                          >
+                            {item.emoji} {item.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom Item Input */}
+                  <div>
+                    <p className="text-sm font-semibold text-dark-wood mb-2">新增自訂項目:</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="項目名稱"
+                        value={newItemEmoji}
+                        onChange={(e) => setNewItemEmoji(e.target.value)}
+                        className="input-field w-20 text-center"
+                        maxLength={2}
+                      />
+                      <input
+                        type="text"
+                        placeholder="例：鹹酥雞"
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)}
+                        className="input-field flex-1"
+                        maxLength={20}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addCustomMenuItem()
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={addCustomMenuItem}
+                        disabled={!newItemName.trim()}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Notes */}

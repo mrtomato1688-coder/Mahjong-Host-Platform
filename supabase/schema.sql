@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS games (
   host_id UUID NOT NULL REFERENCES hosts(id) ON DELETE CASCADE,
   share_code VARCHAR(8) UNIQUE NOT NULL DEFAULT generate_share_code(),
   date DATE NOT NULL,
-  time_slot VARCHAR(50) NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
   location VARCHAR(200) NOT NULL,
   max_seats INTEGER NOT NULL DEFAULT 4 CHECK (max_seats IN (4, 8, 12)),
   notes TEXT,
@@ -59,14 +60,27 @@ CREATE TABLE IF NOT EXISTS rsvps (
   player_name VARCHAR(100) NOT NULL,
   player_phone VARCHAR(20) NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'declined', 'maybe')),
+  food_preferences TEXT[],
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(game_id, player_phone)
 );
 
+-- Game menu items table (F&B)
+CREATE TABLE IF NOT EXISTS game_menu_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+  item_name VARCHAR(100) NOT NULL,
+  item_emoji VARCHAR(10),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for rsvps
 CREATE INDEX IF NOT EXISTS idx_rsvps_game_id ON rsvps(game_id);
 CREATE INDEX IF NOT EXISTS idx_rsvps_status ON rsvps(status);
+
+-- Indexes for game_menu_items
+CREATE INDEX IF NOT EXISTS idx_game_menu_items_game_id ON game_menu_items(game_id);
 
 -- Admin users table
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -80,6 +94,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 ALTER TABLE hosts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rsvps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_menu_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
@@ -92,6 +107,8 @@ DROP POLICY IF EXISTS "Public can view games by share code" ON games;
 DROP POLICY IF EXISTS "Hosts can view RSVPs for own games" ON rsvps;
 DROP POLICY IF EXISTS "Public can create RSVPs" ON rsvps;
 DROP POLICY IF EXISTS "Public can view RSVPs" ON rsvps;
+DROP POLICY IF EXISTS "Public can view menu items" ON game_menu_items;
+DROP POLICY IF EXISTS "Hosts can manage menu items for own games" ON game_menu_items;
 
 -- RLS Policies for hosts
 CREATE POLICY "Hosts can view own profile"
@@ -134,6 +151,17 @@ CREATE POLICY "Public can create RSVPs"
 CREATE POLICY "Public can view RSVPs"
   ON rsvps FOR SELECT
   USING (true);
+
+-- RLS Policies for game_menu_items
+CREATE POLICY "Public can view menu items"
+  ON game_menu_items FOR SELECT
+  USING (true);
+
+CREATE POLICY "Hosts can manage menu items for own games"
+  ON game_menu_items FOR ALL
+  USING (
+    game_id IN (SELECT id FROM games WHERE host_id = auth.uid())
+  );
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

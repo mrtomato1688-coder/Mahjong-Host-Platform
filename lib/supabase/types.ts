@@ -38,7 +38,8 @@ export interface Database {
           host_id: string
           share_code: string
           date: string
-          time_slot: string
+          start_time: string
+          end_time: string
           location: string
           max_seats: number
           notes: string | null
@@ -51,7 +52,8 @@ export interface Database {
           host_id: string
           share_code: string
           date: string
-          time_slot: string
+          start_time: string
+          end_time: string
           location: string
           max_seats?: number
           notes?: string | null
@@ -64,7 +66,8 @@ export interface Database {
           host_id?: string
           share_code?: string
           date?: string
-          time_slot?: string
+          start_time?: string
+          end_time?: string
           location?: string
           max_seats?: number
           notes?: string | null
@@ -80,6 +83,7 @@ export interface Database {
           player_name: string
           player_phone: string
           status: 'confirmed' | 'declined' | 'maybe'
+          food_preferences: string[] | null
           created_at: string
           updated_at: string
         }
@@ -89,6 +93,7 @@ export interface Database {
           player_name: string
           player_phone: string
           status?: 'confirmed' | 'declined' | 'maybe'
+          food_preferences?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -98,8 +103,32 @@ export interface Database {
           player_name?: string
           player_phone?: string
           status?: 'confirmed' | 'declined' | 'maybe'
+          food_preferences?: string[] | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      game_menu_items: {
+        Row: {
+          id: string
+          game_id: string
+          item_name: string
+          item_emoji: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          game_id: string
+          item_name: string
+          item_emoji?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          game_id?: string
+          item_name?: string
+          item_emoji?: string | null
+          created_at?: string
         }
       }
       admin_users: {
@@ -130,4 +159,5 @@ export interface Database {
 export type Host = Database['public']['Tables']['hosts']['Row']
 export type Game = Database['public']['Tables']['games']['Row']
 export type RSVP = Database['public']['Tables']['rsvps']['Row']
+export type GameMenuItem = Database['public']['Tables']['game_menu_items']['Row']
 export type AdminUser = Database['public']['Tables']['admin_users']['Row']

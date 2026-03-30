@@ -24,14 +24,14 @@ const mockGame = {
       id: '1',
       playerName: '阿明',
       playerPhone: '0912345678',
-      status: 'confirmed' as const,
+      status: 'confirmed' as 'confirmed' | 'declined' | 'maybe',
       createdAt: new Date(Date.now() - 1800000), // 30 mins ago
     },
     {
       id: '2',
       playerName: '小華',
       playerPhone: '0923456789',
-      status: 'confirmed' as const,
+      status: 'confirmed' as 'confirmed' | 'declined' | 'maybe',
       createdAt: new Date(Date.now() - 900000), // 15 mins ago
     },
   ],
