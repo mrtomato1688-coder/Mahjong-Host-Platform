@@ -114,6 +114,8 @@ export interface Database {
           game_id: string
           item_name: string
           item_emoji: string | null
+          price: number
+          quantity: number
           created_at: string
         }
         Insert: {
@@ -121,6 +123,8 @@ export interface Database {
           game_id: string
           item_name: string
           item_emoji?: string | null
+          price?: number
+          quantity?: number
           created_at?: string
         }
         Update: {
@@ -128,6 +132,8 @@ export interface Database {
           game_id?: string
           item_name?: string
           item_emoji?: string | null
+          price?: number
+          quantity?: number
           created_at?: string
         }
       }

@@ -11,17 +11,19 @@ import { Calendar, Clock, MapPin, Users, StickyNote, UtensilsCrossed, Plus, X } 
 interface MenuItem {
   name: string
   emoji: string
+  price: number
+  quantity: number
 }
 
 const PRESET_MENU_ITEMS: MenuItem[] = [
-  { name: '啤酒', emoji: '🍺' },
-  { name: '汽水', emoji: '🥤' },
-  { name: '麵食', emoji: '🍜' },
-  { name: '披薩', emoji: '🍕' },
-  { name: '便當', emoji: '🍱' },
-  { name: '點心', emoji: '🍪' },
-  { name: '茶飲', emoji: '🍵' },
-  { name: '咖啡', emoji: '☕' },
+  { name: '啤酒', emoji: '🍺', price: 50, quantity: 0 },
+  { name: '汽水', emoji: '🥤', price: 30, quantity: 0 },
+  { name: '麵食', emoji: '🍜', price: 80, quantity: 0 },
+  { name: '披薩', emoji: '🍕', price: 120, quantity: 0 },
+  { name: '便當', emoji: '🍱', price: 100, quantity: 0 },
+  { name: '點心', emoji: '🍪', price: 40, quantity: 0 },
+  { name: '茶飲', emoji: '🍵', price: 35, quantity: 0 },
+  { name: '咖啡', emoji: '☕', price: 45, quantity: 0 },
 ]
 
 export default function NewGamePage() {
@@ -44,6 +46,9 @@ export default function NewGamePage() {
   const [selectedMenuItems, setSelectedMenuItems] = useState<MenuItem[]>([])
   const [newItemName, setNewItemName] = useState('')
   const [newItemEmoji, setNewItemEmoji] = useState('🍽️')
+  const [newItemPrice, setNewItemPrice] = useState('')
+  const [newItemQuantity, setNewItemQuantity] = useState('')
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -113,6 +118,8 @@ export default function NewGamePage() {
           menuItems: enableFB ? selectedMenuItems.map(item => ({
             name: item.name,
             emoji: item.emoji,
+            price: item.price,
+            quantity: item.quantity,
           })) : [],
         }),
       })
@@ -142,31 +149,51 @@ export default function NewGamePage() {
   }
 
   const toggleMenuItem = (item: MenuItem) => {
-    setSelectedMenuItems(prev => {
-      const exists = prev.some(i => i.name === item.name && i.emoji === item.emoji)
-      if (exists) {
-        return prev.filter(i => !(i.name === item.name && i.emoji === item.emoji))
-      } else {
-        return [...prev, item]
-      }
-    })
+    const exists = selectedMenuItems.some(i => i.name === item.name && i.emoji === item.emoji)
+    if (exists) {
+      // Remove if already selected
+      setSelectedMenuItems(prev => prev.filter(i => !(i.name === item.name && i.emoji === item.emoji)))
+    } else {
+      // Add with default price/quantity, then open edit mode
+      setSelectedMenuItems(prev => [...prev, item])
+      setEditingItem(item)
+    }
   }
 
   const removeMenuItem = (item: MenuItem) => {
     setSelectedMenuItems(prev => prev.filter(i => !(i.name === item.name && i.emoji === item.emoji)))
+    if (editingItem && editingItem.name === item.name && editingItem.emoji === item.emoji) {
+      setEditingItem(null)
+    }
+  }
+
+  const updateMenuItem = (oldItem: MenuItem, updates: Partial<MenuItem>) => {
+    setSelectedMenuItems(prev => prev.map(item => {
+      if (item.name === oldItem.name && item.emoji === oldItem.emoji) {
+        return { ...item, ...updates }
+      }
+      return item
+    }))
   }
 
   const addCustomMenuItem = () => {
     if (!newItemName.trim()) return
     
+    const price = parseInt(newItemPrice) || 0
+    const quantity = parseInt(newItemQuantity) || 0
+    
     const newItem: MenuItem = {
       name: newItemName.trim(),
-      emoji: newItemEmoji
+      emoji: newItemEmoji,
+      price,
+      quantity
     }
     
     setSelectedMenuItems(prev => [...prev, newItem])
     setNewItemName('')
     setNewItemEmoji('🍽️')
+    setNewItemPrice('')
+    setNewItemQuantity('')
   }
 
   if (showSuccess) {
@@ -357,26 +384,72 @@ export default function NewGamePage() {
 
               {enableFB && (
                 <div className="space-y-4 bg-tile-ivory/50 rounded-lg p-4">
-                  {/* Selected Items */}
+                  {/* Selected Items with Price & Quantity */}
                   {selectedMenuItems.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold text-dark-wood mb-2">已選擇項目:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedMenuItems.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-mahjong-green/30"
-                          >
-                            <span>{item.emoji} {item.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeMenuItem(item)}
-                              className="text-red-500 hover:text-red-700"
+                      <p className="text-sm font-semibold text-dark-wood mb-3">已選擇項目:</p>
+                      <div className="space-y-2">
+                        {selectedMenuItems.map((item, idx) => {
+                          const isEditing = editingItem && editingItem.name === item.name && editingItem.emoji === item.emoji
+                          
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white rounded-lg border border-mahjong-green/30 p-3"
                             >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="text-xl">{item.emoji}</span>
+                                <span className="font-semibold flex-1">{item.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingItem(isEditing ? null : item)}
+                                  className="text-mahjong-green hover:text-mahjong-green/80 text-sm"
+                                >
+                                  {isEditing ? '完成' : '編輯'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeMenuItem(item)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              
+                              {isEditing ? (
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <label className="text-xs text-neutral-gray/80 block mb-1">價格 (元)</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={item.price}
+                                      onChange={(e) => updateMenuItem(item, { price: parseInt(e.target.value) || 0 })}
+                                      className="input-field text-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-neutral-gray/80 block mb-1">數量 (0=無限)</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={item.quantity}
+                                      onChange={(e) => updateMenuItem(item, { quantity: parseInt(e.target.value) || 0 })}
+                                      className="input-field text-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex gap-3 text-sm text-neutral-gray">
+                                  <span>💰 ${item.price}</span>
+                                  <span>📦 {item.quantity === 0 ? '無限' : `${item.quantity}份`}</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -395,7 +468,7 @@ export default function NewGamePage() {
                             type="button"
                             onClick={() => toggleMenuItem(item)}
                             className={`
-                              px-3 py-2 rounded-lg border-2 transition-all
+                              px-3 py-2 rounded-lg border-2 transition-all text-sm
                               ${isSelected
                                 ? 'border-mahjong-green bg-mahjong-green text-white'
                                 : 'border-gray-300 bg-white hover:border-mahjong-green/50'
@@ -407,42 +480,57 @@ export default function NewGamePage() {
                         )
                       })}
                     </div>
+                    <p className="text-xs text-neutral-gray/60 mt-2">點選後可編輯價格和數量</p>
                   </div>
 
                   {/* Custom Item Input */}
                   <div>
                     <p className="text-sm font-semibold text-dark-wood mb-2">新增自訂項目:</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="項目名稱"
-                        value={newItemEmoji}
-                        onChange={(e) => setNewItemEmoji(e.target.value)}
-                        className="input-field w-20 text-center"
-                        maxLength={2}
-                      />
-                      <input
-                        type="text"
-                        placeholder="例：鹹酥雞"
-                        value={newItemName}
-                        onChange={(e) => setNewItemName(e.target.value)}
-                        className="input-field flex-1"
-                        maxLength={20}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            addCustomMenuItem()
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={addCustomMenuItem}
-                        disabled={!newItemName.trim()}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="🍽️"
+                          value={newItemEmoji}
+                          onChange={(e) => setNewItemEmoji(e.target.value)}
+                          className="input-field w-16 text-center"
+                          maxLength={2}
+                        />
+                        <input
+                          type="text"
+                          placeholder="項目名稱 (例：鹹酥雞)"
+                          value={newItemName}
+                          onChange={(e) => setNewItemName(e.target.value)}
+                          className="input-field flex-1"
+                          maxLength={20}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          placeholder="價格 (元)"
+                          value={newItemPrice}
+                          onChange={(e) => setNewItemPrice(e.target.value)}
+                          className="input-field flex-1"
+                          min="0"
+                        />
+                        <input
+                          type="number"
+                          placeholder="數量 (0=無限)"
+                          value={newItemQuantity}
+                          onChange={(e) => setNewItemQuantity(e.target.value)}
+                          className="input-field flex-1"
+                          min="0"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={addCustomMenuItem}
+                          disabled={!newItemName.trim()}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

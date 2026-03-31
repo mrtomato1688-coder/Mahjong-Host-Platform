@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import { formatGameDate, getGameShareUrl, copyToClipboard } from '@/lib/utils'
-import { Calendar, MapPin, Users, Copy, ExternalLink, Edit } from 'lucide-react'
+import { Calendar, MapPin, Users, Copy, ExternalLink, Edit, UtensilsCrossed } from 'lucide-react'
 
 // Mock data for prototype
 const mockGames = [
@@ -153,6 +153,24 @@ export default function DashboardPage() {
                     {game.notes && (
                       <div className="bg-mahjong-green/5 rounded-lg p-3">
                         <p className="text-sm text-neutral-gray">{game.notes}</p>
+                      </div>
+                    )}
+
+                    {game.menuItems && game.menuItems.length > 0 && (
+                      <div className="bg-tile-ivory/50 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <UtensilsCrossed className="w-4 h-4 text-mahjong-green" />
+                          <span className="text-sm font-semibold text-dark-wood">餐飲選項</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {game.menuItems.map((item: any) => (
+                            <span key={item.id} className="text-xs bg-white px-2 py-1 rounded border border-mahjong-green/20">
+                              {item.item_emoji || item.emoji} {item.item_name || item.name}
+                              {' '}${item.price}
+                              {item.quantity > 0 && ` (${item.quantity}份)`}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

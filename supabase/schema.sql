@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS game_menu_items (
   game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   item_name VARCHAR(100) NOT NULL,
   item_emoji VARCHAR(10),
+  price INTEGER NOT NULL DEFAULT 0, -- Price in TWD (e.g., 50 = $50 TWD)
+  quantity INTEGER NOT NULL DEFAULT 0, -- Available quantity (0 = unlimited)
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

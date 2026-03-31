@@ -407,28 +407,52 @@ export default function JoinGamePage() {
                   <UtensilsCrossed className="w-4 h-4 text-mahjong-green" />
                   食物飲料 (可複選)
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   {game.menuItems.map((item: any) => {
                     const isSelected = formData.foodPreferences.includes(`${item.emoji} ${item.name}`)
+                    const hasQuantity = item.quantity > 0
+                    const isOutOfStock = hasQuantity && item.quantity <= 0
+                    
                     return (
                       <label
                         key={item.id}
                         className={`
-                          flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
-                          ${isSelected
-                            ? 'border-mahjong-green bg-mahjong-green/5'
-                            : 'border-gray-300 hover:border-mahjong-green/50'
+                          flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all
+                          ${isOutOfStock 
+                            ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
+                            : isSelected
+                              ? 'border-mahjong-green bg-mahjong-green/5'
+                              : 'border-gray-300 hover:border-mahjong-green/50'
                           }
                         `}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleFoodPreference(`${item.emoji} ${item.name}`)}
-                          className="sr-only"
-                        />
-                        <span className="text-xl">{item.emoji}</span>
-                        <span className="text-sm font-medium">{item.name}</span>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleFoodPreference(`${item.emoji} ${item.name}`)}
+                            disabled={isOutOfStock}
+                            className="sr-only"
+                          />
+                          <span className="text-2xl">{item.emoji}</span>
+                          <div>
+                            <div className="font-medium text-dark-wood">{item.name}</div>
+                            <div className="text-xs text-neutral-gray flex gap-2 mt-0.5">
+                              <span>💰 ${item.price}</span>
+                              {hasQuantity && (
+                                <span className={isOutOfStock ? 'text-red-500' : ''}>
+                                  📦 {isOutOfStock ? '已售完' : `剩${item.quantity}份`}
+                                </span>
+                              )}
+                              {!hasQuantity && (
+                                <span>📦 充足供應</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <span className="text-mahjong-green">✓</span>
+                        )}
                       </label>
                     )
                   })}

@@ -66,10 +66,12 @@ export async function POST(request: NextRequest) {
 
     // Insert menu items if F&B is enabled
     if (menuItems.length > 0) {
-      const menuItemsData = menuItems.map((item: { name: string; emoji: string }) => ({
+      const menuItemsData = menuItems.map((item: { name: string; emoji: string; price: number; quantity: number }) => ({
         game_id: game.id,
         item_name: item.name,
         item_emoji: item.emoji,
+        price: item.price || 0,
+        quantity: item.quantity || 0,
       }))
 
       const { error: menuError } = await supabase
